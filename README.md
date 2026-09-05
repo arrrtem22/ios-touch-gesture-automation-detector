@@ -15,4 +15,4 @@ Native iOS touch-gesture inspector with live trails and telemetry.
 
 Open `TouchSignal.xcodeproj` in Xcode and run on iOS 17+.
 
-The WDA verdict evaluates touch geometry throughout `began` and `moved`. It recognizes both zero-radius injection and the constant synthetic radius seen in WDA swipes when force remains zero. The final `ended` sample is excluded from classification, and the UI retains the last meaningful radius and force while also showing the raw terminal values.
+The WDA verdict evaluates touch geometry throughout `began` and `moved`. Confirmation requires sustained zero force, zero radius tolerance, and either zero or unnaturally stable radius. Radius tolerance prevents zero-force devices from misclassifying physical fingers. The final `ended` sample is excluded, while the UI retains meaningful values and separately shows raw terminal values.

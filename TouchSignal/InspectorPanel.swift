@@ -58,12 +58,12 @@ final class InspectorPanel: UIView {
             let hits = s.wdaHits.isEmpty ? "wda_service" : s.wdaHits.joined(separator: ", ")
             verdict.text = "WDA score \(s.wdaScore)/100 – WEBDRIVERAGENT CONFIRMED\n" +
                 "hits: \(hits)\n" +
-                "radius range: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero-force: \(pct(s.zeroForceRatio))  samples: \(s.inspectedSampleCount)"
+                "radius: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero force/tol: \(pct(s.zeroForceRatio))/\(pct(s.zeroToleranceRatio))  n:\(s.inspectedSampleCount)"
         } else {
             verdict.textColor = Theme.green
             verdict.text = "WDA score \(s.wdaScore)/100 – DIRECT TOUCH OBSERVED\n" +
                 "hits: measurable contact geometry\n" +
-                "radius range: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero-force: \(pct(s.zeroForceRatio))  samples: \(s.inspectedSampleCount)"
+                "radius: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero force/tol: \(pct(s.zeroForceRatio))/\(pct(s.zeroToleranceRatio))  n:\(s.inspectedSampleCount)"
         }
     }
 

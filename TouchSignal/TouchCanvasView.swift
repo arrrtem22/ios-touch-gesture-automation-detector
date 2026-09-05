@@ -20,6 +20,7 @@ struct TouchSnapshot {
     var inspectedSampleCount = 0
     var zeroRadiusRatio: CGFloat = 0
     var zeroForceRatio: CGFloat = 0
+    var zeroToleranceRatio: CGFloat = 0
     var minimumGestureRadius: CGFloat = 0
     var maximumGestureRadius: CGFloat = 0
     var isAutomationSuspected = false
@@ -36,6 +37,7 @@ private struct GestureMetrics {
     var sampleCount = 0
     var zeroRadiusCount = 0
     var zeroForceCount = 0
+    var zeroToleranceCount = 0
     var maximumRadius: CGFloat = 0
     var maximumForce: CGFloat = 0
     var minimumRadius: CGFloat = .greatestFiniteMagnitude
@@ -43,6 +45,7 @@ private struct GestureMetrics {
     var lastRadiusTolerance: CGFloat = 0
     var lastForce: CGFloat = 0
     var lastMaximumPossibleForce: CGFloat = 0
+    var maximumRadiusTolerance: CGFloat = 0
 
     mutating func observe(_ touch: UITouch) {
         sampleCount += 1
@@ -53,8 +56,10 @@ private struct GestureMetrics {
         lastRadiusTolerance = touch.majorRadiusTolerance
         lastForce = touch.force
         lastMaximumPossibleForce = touch.maximumPossibleForce
+        maximumRadiusTolerance = max(maximumRadiusTolerance, touch.majorRadiusTolerance)
         if touch.majorRadius <= 0.5 { zeroRadiusCount += 1 }
         if touch.force <= 0.001 { zeroForceCount += 1 }
+        if touch.majorRadiusTolerance <= 0.01 { zeroToleranceCount += 1 }
     }
 
     var zeroRadiusRatio: CGFloat {
@@ -65,17 +70,25 @@ private struct GestureMetrics {
         sampleCount == 0 ? 0 : CGFloat(zeroForceCount) / CGFloat(sampleCount)
     }
 
+    var zeroToleranceRatio: CGFloat {
+        sampleCount == 0 ? 0 : CGFloat(zeroToleranceCount) / CGFloat(sampleCount)
+    }
+
     var evidence: AutomationEvidence {
         let enoughSamples = sampleCount >= 6
         let radiusSpread = maximumRadius - (minimumRadius == .greatestFiniteMagnitude ? 0 : minimumRadius)
         let sustainedZeroRadius = enoughSamples && zeroRadiusRatio >= 0.9 && maximumRadius <= 0.5
         let unnaturallyStableRadius = enoughSamples && minimumRadius > 0.5 && radiusSpread <= 0.10
         let sustainedZeroForce = enoughSamples && zeroForceRatio >= 0.9 && maximumForce <= 0.001
-        let confirmed = sustainedZeroForce && (sustainedZeroRadius || unnaturallyStableRadius)
+        // Real fingers on this device may also report zero force, but retain a
+        // nonzero radius tolerance. WDA samples use exact, zero-tolerance geometry.
+        let sustainedZeroTolerance = enoughSamples && zeroToleranceRatio >= 0.9 && maximumRadiusTolerance <= 0.01
+        let confirmed = sustainedZeroForce && sustainedZeroTolerance && (sustainedZeroRadius || unnaturallyStableRadius)
         var hits: [String] = []
         if sustainedZeroRadius { hits.append("radius_zero_stream") }
         if unnaturallyStableRadius { hits.append("radius_constant_stream") }
         if sustainedZeroForce { hits.append("force_zero_stream") }
+        if sustainedZeroTolerance { hits.append("tolerance_zero_stream") }
         return AutomationEvidence(
             score: confirmed ? 100 : 0,
             isConfirmed: confirmed,
@@ -83,6 +96,7 @@ private struct GestureMetrics {
             sampleCount: sampleCount,
             zeroRadiusRatio: zeroRadiusRatio,
             zeroForceRatio: zeroForceRatio,
+            zeroToleranceRatio: zeroToleranceRatio,
             minimumRadius: minimumRadius == .greatestFiniteMagnitude ? 0 : minimumRadius,
             maximumRadius: maximumRadius
         )
@@ -96,6 +110,7 @@ struct AutomationEvidence: Equatable {
     var sampleCount = 0
     var zeroRadiusRatio: CGFloat = 0
     var zeroForceRatio: CGFloat = 0
+    var zeroToleranceRatio: CGFloat = 0
     var minimumRadius: CGFloat = 0
     var maximumRadius: CGFloat = 0
 }
@@ -190,6 +205,7 @@ final class TouchCanvasView: UIView {
                 inspectedSampleCount: evidence.sampleCount,
                 zeroRadiusRatio: evidence.zeroRadiusRatio,
                 zeroForceRatio: evidence.zeroForceRatio,
+                zeroToleranceRatio: evidence.zeroToleranceRatio,
                 minimumGestureRadius: evidence.minimumRadius,
                 maximumGestureRadius: evidence.maximumRadius,
                 isAutomationSuspected: evidence.isConfirmed,
