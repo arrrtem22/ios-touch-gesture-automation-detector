@@ -6,8 +6,7 @@ final class InspectorPanel: UIView {
     private let rows = UILabel()
     private let signals = UILabel()
     private let verdict = UILabel()
-    private let resetButton = UIButton(type: .system)
-    private var expanded = true
+    private let clearButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -21,16 +20,21 @@ final class InspectorPanel: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     private func setup() {
-        [state, rows, signals, verdict, resetButton].forEach { $0.translatesAutoresizingMaskIntoConstraints = false; addSubview($0) }
+        [state, rows, signals, verdict, clearButton].forEach { $0.translatesAutoresizingMaskIntoConstraints = false; addSubview($0) }
         state.font = Theme.mono(15, weight: .bold); state.textColor = Theme.green
         rows.font = Theme.mono(12); rows.textColor = Theme.softText; rows.numberOfLines = 0
         signals.font = Theme.mono(12); signals.textColor = Theme.blueText; signals.numberOfLines = 0
         verdict.font = Theme.mono(12, weight: .bold); verdict.numberOfLines = 0
-        resetButton.setTitle("⌄", for: .normal); resetButton.titleLabel?.font = .systemFont(ofSize: 28, weight: .bold)
-        resetButton.setTitleColor(Theme.softText, for: .normal); resetButton.addTarget(self, action: #selector(reset), for: .touchUpInside)
+        clearButton.setTitle("CLEAR", for: .normal)
+        clearButton.titleLabel?.font = Theme.mono(13, weight: .bold)
+        clearButton.setTitleColor(Theme.green, for: .normal)
+        clearButton.layer.borderWidth = 1
+        clearButton.layer.borderColor = Theme.green.withAlphaComponent(0.7).cgColor
+        clearButton.layer.cornerRadius = 4
+        clearButton.addTarget(self, action: #selector(reset), for: .touchUpInside)
         NSLayoutConstraint.activate([
             state.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), state.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            resetButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12), resetButton.topAnchor.constraint(equalTo: topAnchor, constant: 2), resetButton.widthAnchor.constraint(equalToConstant: 42), resetButton.heightAnchor.constraint(equalToConstant: 40),
+            clearButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), clearButton.topAnchor.constraint(equalTo: topAnchor, constant: 8), clearButton.heightAnchor.constraint(equalToConstant: 30),
             rows.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), rows.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), rows.topAnchor.constraint(equalTo: state.bottomAnchor, constant: 8),
             signals.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), signals.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), signals.topAnchor.constraint(equalTo: rows.bottomAnchor, constant: 8),
             verdict.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), verdict.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), verdict.topAnchor.constraint(equalTo: signals.bottomAnchor, constant: 7)

@@ -78,7 +78,6 @@ final class TouchCanvasView: UIView {
             samples[id, default: []].append(sample)
             if samples[id]!.count > 96 { samples[id]!.removeFirst(samples[id]!.count - 96) }
             recordCount += 1
-            let predicted = event?.predictedTouches(for: touch)?.count ?? 0
             latest = TouchSnapshot(
                 recordCount: recordCount,
                 sequenceCount: sequenceCount,
@@ -90,7 +89,9 @@ final class TouchCanvasView: UIView {
                 force: touch.force,
                 delta: dt,
                 latency: max(0, ProcessInfo.processInfo.systemUptime - touch.timestamp),
-                isAutomationSuspected: radius == 0 && touch.force == 0 && predicted == 0 && phase == "ended",
+                // UIKit reports zero radius and force on many perfectly normal end events.
+                // Those values alone are not evidence of WebDriverAgent or other automation.
+                isAutomationSuspected: false,
                 isEnded: phase == "ended" || phase == "cancelled"
             )
         }
