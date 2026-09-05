@@ -8,10 +8,11 @@ Native iOS touch-gesture inspector with live trails and telemetry.
 
 - Live grid, path, contact-radius, and endpoint display
 - Touch position, force, timing, and multi-touch telemetry
+- Active WebDriverAgent detection through its on-device HTTP and MJPEG services
 - Clear diagnostics view for accessibility and automation signals
 
 ## Run
 
 Open `TouchSignal.xcodeproj` in Xcode and run on iOS 17+.
 
-> Automation results are diagnostic heuristics; iOS does not expose reliable system-wide automation detection to apps.
+The WDA verdict is based on its standard on-device services (HTTP port `8100` and optional MJPEG port `9100`). UIKit touch geometry is not used as proof because a completed finger touch may also report zero radius or force.

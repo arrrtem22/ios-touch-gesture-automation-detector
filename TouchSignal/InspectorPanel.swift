@@ -57,10 +57,15 @@ final class InspectorPanel: UIView {
         signals.text = "AssistiveTouch: off   VoiceOver: off   SwitchControl: off\nGCMouse: none   GCKeyboard: none   moveEvents: 0  btnEvents: 0  scroll: 0"
         if s.isAutomationSuspected {
             verdict.textColor = Theme.red
-            verdict.text = "WDA score 100/100 – WEBDRIVERAGENT CONFIRMED\nhits: wda_http_status, wda_mjpeg_open\nports: 8100=WDA:1100=open  max 100 (0 reads)"
+            let hits = s.wdaHits.isEmpty ? "wda_service" : s.wdaHits.joined(separator: ", ")
+            verdict.text = "WDA score \(s.wdaScore)/100 – WEBDRIVERAGENT CONFIRMED\n" +
+                "hits: \(hits)\n" +
+                "ports: 8100=\(s.wdaPort8100Open ? "open" : "closed")  9100=\(s.wdaPort9100Open ? "open" : "closed")"
         } else {
             verdict.textColor = Theme.green
-            verdict.text = "signal score 0/100 – DIRECT TOUCH OBSERVED\nhits: touch delivery normal  confidence: high"
+            verdict.text = "WDA score \(s.wdaScore)/100 – NO WDA SERVICE DETECTED\n" +
+                "hits: touch delivery normal\n" +
+                "ports: 8100=closed  9100=closed"
         }
     }
 

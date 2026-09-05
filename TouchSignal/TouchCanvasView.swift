@@ -11,6 +11,10 @@ struct TouchSnapshot {
     var force: CGFloat = 0
     var delta: TimeInterval = 0
     var latency: TimeInterval = 0
+    var wdaScore = 0
+    var wdaHits: [String] = []
+    var wdaPort8100Open = false
+    var wdaPort9100Open = false
     var isAutomationSuspected = false
     var isEnded = false
 }
@@ -28,6 +32,7 @@ final class TouchCanvasView: UIView {
     private var recordCount = 0
     private var sequenceCount = 0
     private var activeFingerCount = 0
+    private var automationEvidence = AutomationEvidence()
     private var displayLink: CADisplayLink?
 
     override init(frame: CGRect) {
@@ -43,7 +48,15 @@ final class TouchCanvasView: UIView {
 
     func reset() {
         samples.removeAll(); recordCount = 0; sequenceCount = 0; activeFingerCount = 0
-        latest = TouchSnapshot(); setNeedsDisplay(); onSnapshot?(latest)
+        latest = TouchSnapshot()
+        applyAutomationEvidence(to: &latest)
+        setNeedsDisplay(); onSnapshot?(latest)
+    }
+
+    func updateAutomationEvidence(_ evidence: AutomationEvidence) {
+        automationEvidence = evidence
+        applyAutomationEvidence(to: &latest)
+        onSnapshot?(latest)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -78,7 +91,7 @@ final class TouchCanvasView: UIView {
             samples[id, default: []].append(sample)
             if samples[id]!.count > 96 { samples[id]!.removeFirst(samples[id]!.count - 96) }
             recordCount += 1
-            latest = TouchSnapshot(
+            var snapshot = TouchSnapshot(
                 recordCount: recordCount,
                 sequenceCount: sequenceCount,
                 fingerText: String(activeFingerCount),
@@ -89,13 +102,20 @@ final class TouchCanvasView: UIView {
                 force: touch.force,
                 delta: dt,
                 latency: max(0, ProcessInfo.processInfo.systemUptime - touch.timestamp),
-                // UIKit reports zero radius and force on many perfectly normal end events.
-                // Those values alone are not evidence of WebDriverAgent or other automation.
-                isAutomationSuspected: false,
                 isEnded: phase == "ended" || phase == "cancelled"
             )
+            applyAutomationEvidence(to: &snapshot)
+            latest = snapshot
         }
         setNeedsDisplay(); onSnapshot?(latest)
+    }
+
+    private func applyAutomationEvidence(to snapshot: inout TouchSnapshot) {
+        snapshot.wdaScore = automationEvidence.score
+        snapshot.wdaHits = automationEvidence.hits
+        snapshot.wdaPort8100Open = automationEvidence.port8100Open
+        snapshot.wdaPort9100Open = automationEvidence.port9100Open
+        snapshot.isAutomationSuspected = automationEvidence.isConfirmed
     }
 
     @objc private func refresh() { setNeedsDisplay() }
