@@ -1,16 +1,17 @@
 # Touch Signal
 
-A native UIKit iOS touch-gesture inspection tool with a dark diagnostics interface inspired by the supplied reference.
+Native iOS touch-gesture inspector with live trails and telemetry.
 
-## What it does
+![Gesture diagnostics](assets/gestures.png)
 
-- Draws live direct-touch paths on a calibrated grid.
-- Shows every point, estimated touch radius, force, timing, and multi-touch count.
-- Marks current touch endpoints with a crosshair and retains a short visual trail.
-- Presents accessibility/controller signal status and a transparent, heuristic automation verdict.
+## Features
+
+- Live grid, path, contact-radius, and endpoint display
+- Touch position, force, timing, and multi-touch telemetry
+- Clear diagnostics view for accessibility and automation signals
 
 ## Run
 
-Open `TouchSignal.xcodeproj` in Xcode 26 or later, choose an iPhone/iPad simulator or device, then run. The project targets iOS 17+ and needs no third-party dependencies.
+Open `TouchSignal.xcodeproj` in Xcode and run on iOS 17+.
 
-> The automation panel is a visual diagnostic heuristic, not a security control. iOS intentionally limits apps’ ability to identify system-wide automation.
+> Automation results are diagnostic heuristics; iOS does not expose reliable system-wide automation detection to apps.

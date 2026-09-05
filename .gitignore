@@ -2,5 +2,6 @@
 DerivedData/
 build/
 .build/
+.device-build/
 *.xcuserstate
 xcuserdata/
