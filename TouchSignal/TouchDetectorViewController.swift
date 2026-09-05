@@ -15,8 +15,10 @@ final class TouchDetectorViewController: UIViewController {
         view.addSubview(inspector)
         view.addSubview(topBar)
 
-        topBar.font = Theme.mono(16, weight: .medium)
+        topBar.font = Theme.mono(14, weight: .medium)
         topBar.textAlignment = .right
+        topBar.adjustsFontSizeToFitWidth = true
+        topBar.minimumScaleFactor = 0.75
         topBar.textColor = Theme.softText
         topBar.backgroundColor = UIColor(white: 0.12, alpha: 0.96)
         topBar.text = "records 0   sequences 0   finger:–"
@@ -33,12 +35,13 @@ final class TouchDetectorViewController: UIViewController {
             canvas.topAnchor.constraint(equalTo: view.topAnchor),
             canvas.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             topBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
             topBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
             topBar.heightAnchor.constraint(equalToConstant: 29),
             inspector.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             inspector.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             inspector.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            inspector.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.34)
+            inspector.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.42)
         ])
     }
 

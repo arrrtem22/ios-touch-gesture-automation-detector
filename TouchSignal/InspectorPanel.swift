@@ -21,51 +21,49 @@ final class InspectorPanel: UIView {
 
     private func setup() {
         [state, rows, signals, verdict, clearButton].forEach { $0.translatesAutoresizingMaskIntoConstraints = false; addSubview($0) }
-        state.font = Theme.mono(15, weight: .bold); state.textColor = Theme.green
-        rows.font = Theme.mono(12); rows.textColor = Theme.softText; rows.numberOfLines = 0
-        signals.font = Theme.mono(12); signals.textColor = Theme.blueText; signals.numberOfLines = 0
-        verdict.font = Theme.mono(12, weight: .bold); verdict.numberOfLines = 0
+        state.font = Theme.mono(12, weight: .bold); state.textColor = Theme.green
+        state.adjustsFontSizeToFitWidth = true; state.minimumScaleFactor = 0.75
+        rows.font = Theme.mono(10); rows.textColor = Theme.softText; rows.numberOfLines = 0
+        signals.font = Theme.mono(10); signals.textColor = Theme.blueText; signals.numberOfLines = 0
+        verdict.font = Theme.mono(10, weight: .bold); verdict.numberOfLines = 0
         clearButton.setTitle("CLEAR", for: .normal)
-        clearButton.titleLabel?.font = Theme.mono(13, weight: .bold)
+        clearButton.titleLabel?.font = Theme.mono(11, weight: .bold)
         clearButton.setTitleColor(Theme.green, for: .normal)
         clearButton.layer.borderWidth = 1
         clearButton.layer.borderColor = Theme.green.withAlphaComponent(0.7).cgColor
         clearButton.layer.cornerRadius = 4
         clearButton.addTarget(self, action: #selector(reset), for: .touchUpInside)
         NSLayoutConstraint.activate([
-            state.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), state.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            state.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), state.trailingAnchor.constraint(equalTo: clearButton.leadingAnchor, constant: -10), state.topAnchor.constraint(equalTo: topAnchor, constant: 14),
             clearButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), clearButton.topAnchor.constraint(equalTo: topAnchor, constant: 8), clearButton.heightAnchor.constraint(equalToConstant: 30),
             rows.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), rows.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), rows.topAnchor.constraint(equalTo: state.bottomAnchor, constant: 8),
-            signals.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), signals.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), signals.topAnchor.constraint(equalTo: rows.bottomAnchor, constant: 8),
-            verdict.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), verdict.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), verdict.topAnchor.constraint(equalTo: signals.bottomAnchor, constant: 7)
+            signals.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), signals.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), signals.topAnchor.constraint(equalTo: rows.bottomAnchor, constant: 7),
+            verdict.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14), verdict.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14), verdict.topAnchor.constraint(equalTo: signals.bottomAnchor, constant: 7), verdict.bottomAnchor.constraint(lessThanOrEqualTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
         ])
     }
 
     @objc private func reset() { onReset?() }
 
     func render(_ s: TouchSnapshot) {
-        state.text = "type=direct   phase=\(s.phase)   radius=\(f(s.radius, 3))   force=\(f(s.force, 4))"
-        rows.text = "id 1   sample \(s.recordCount)  seq \(s.sequenceCount)  cb \(s.phase)  taps 1\n" +
-        "pos       \(f(s.point.x, 4)),  \(f(s.point.y, 4))    precise  \(f(s.point.x, 4)), \(f(s.point.y, 4))\n" +
-        "prev      \(f(s.previous.x, 4)),  \(f(s.previous.y, 4))    precise  \(f(s.previous.x, 4)), \(f(s.previous.y, 4))\n" +
-        "radius    \(f(s.radius, 4))  tol \(f(s.radiusTolerance, 4))  rawEnd \(f(s.rawTerminalRadius, 4))\n" +
-        "force     \(f(s.force, 5))  maxPossible \(f(s.maximumPossibleForce, 5))  rawEnd \(f(s.rawTerminalForce, 5))\n" +
-        "stylus    alt 1.5708  azi 0.0000  roll 0.0000\n" +
-        "timestamp \(f(ProcessInfo.processInfo.systemUptime, 3))  dt \(f(s.delta * 1000, 3)) ms  latency \(f(s.latency * 1000, 2)) ms\n" +
-        "estimated  prev 0  expecting 0  updIdx -1\n" +
-        "event     type 0 subtype 0 touches 1 coalesced 1"
-        signals.text = "AssistiveTouch: off   VoiceOver: off   SwitchControl: off\nGCMouse: none   GCKeyboard: none   moveEvents: 0  btnEvents: 0  scroll: 0"
+        state.text = "DIRECT  •  \(s.phase.uppercased())  •  r \(f(s.radius, 2))  •  f \(f(s.force, 4))"
+        rows.text = "id:1  sample:\(s.recordCount)  sequence:\(s.sequenceCount)  phase:\(s.phase)\n" +
+        "pos: \(f(s.point.x, 1)), \(f(s.point.y, 1))   prev: \(f(s.previous.x, 1)), \(f(s.previous.y, 1))\n" +
+        "radius: \(f(s.radius, 3)) ± \(f(s.radiusTolerance, 3))   raw end: \(f(s.rawTerminalRadius, 3))\n" +
+        "force:  \(f(s.force, 5))   max: \(f(s.maximumPossibleForce, 5))   raw end: \(f(s.rawTerminalForce, 5))\n" +
+        "dt: \(f(s.delta * 1000, 2)) ms   latency: \(f(s.latency * 1000, 2)) ms\n" +
+        "touches: 1  coalesced: 1  predicted: 0"
+        signals.text = "AssistiveTouch: off  VoiceOver: off  SwitchControl: off\nMouse: none  Keyboard: none  events: move 0 / button 0 / scroll 0"
         if s.isAutomationSuspected {
             verdict.textColor = Theme.red
             let hits = s.wdaHits.isEmpty ? "wda_service" : s.wdaHits.joined(separator: ", ")
             verdict.text = "WDA score \(s.wdaScore)/100 – WEBDRIVERAGENT CONFIRMED\n" +
                 "hits: \(hits)\n" +
-                "geometry: radius \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
+                "radius range: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero-force: \(pct(s.zeroForceRatio))  samples: \(s.inspectedSampleCount)"
         } else {
             verdict.textColor = Theme.green
             verdict.text = "WDA score \(s.wdaScore)/100 – DIRECT TOUCH OBSERVED\n" +
                 "hits: measurable contact geometry\n" +
-                "geometry: radius \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
+                "radius range: \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  zero-force: \(pct(s.zeroForceRatio))  samples: \(s.inspectedSampleCount)"
         }
     }
 
