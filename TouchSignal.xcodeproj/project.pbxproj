@@ -10,7 +10,6 @@
 		A002 /* TouchDetectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A102 /* TouchDetectorViewController.swift */; };
 		A003 /* TouchCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A103 /* TouchCanvasView.swift */; };
 		A004 /* InspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A104 /* InspectorPanel.swift */; };
-		A005 /* WDADetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A106 /* WDADetector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,7 +19,6 @@
 		A103 /* TouchCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchCanvasView.swift; sourceTree = "<group>"; };
 		A104 /* InspectorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorPanel.swift; sourceTree = "<group>"; };
 		A105 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A106 /* WDADetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WDADetector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -29,7 +27,7 @@
 
 /* Begin PBXGroup section */
 		A300 = {isa = PBXGroup; children = (A301 /* TouchSignal */, A302 /* Products */); sourceTree = "<group>"; };
-		A301 /* TouchSignal */ = {isa = PBXGroup; children = (A101 /* AppDelegate.swift */, A102 /* TouchDetectorViewController.swift */, A103 /* TouchCanvasView.swift */, A104 /* InspectorPanel.swift */, A106 /* WDADetector.swift */, A105 /* Info.plist */); path = TouchSignal; sourceTree = "<group>"; };
+		A301 /* TouchSignal */ = {isa = PBXGroup; children = (A101 /* AppDelegate.swift */, A102 /* TouchDetectorViewController.swift */, A103 /* TouchCanvasView.swift */, A104 /* InspectorPanel.swift */, A105 /* Info.plist */); path = TouchSignal; sourceTree = "<group>"; };
 		A302 /* Products */ = {isa = PBXGroup; children = (A100 /* TouchSignal.app */); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -46,7 +44,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A201 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001 /* AppDelegate.swift in Sources */, A002 /* TouchDetectorViewController.swift in Sources */, A003 /* TouchCanvasView.swift in Sources */, A004 /* InspectorPanel.swift in Sources */, A005 /* WDADetector.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		A201 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001 /* AppDelegate.swift in Sources */, A002 /* TouchDetectorViewController.swift in Sources */, A003 /* TouchCanvasView.swift in Sources */, A004 /* InspectorPanel.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

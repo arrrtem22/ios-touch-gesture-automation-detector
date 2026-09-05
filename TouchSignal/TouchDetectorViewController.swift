@@ -4,7 +4,6 @@ final class TouchDetectorViewController: UIViewController {
     private let canvas = TouchCanvasView()
     private let inspector = InspectorPanel()
     private let topBar = UILabel()
-    private let wdaDetector = WDADetector()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,10 +26,6 @@ final class TouchDetectorViewController: UIViewController {
             self?.topBar.text = "records \(snapshot.recordCount)   sequences \(snapshot.sequenceCount)   finger:\(snapshot.fingerText)"
             self?.inspector.render(snapshot)
         }
-        wdaDetector.onEvidence = { [weak self] evidence in
-            self?.canvas.updateAutomationEvidence(evidence)
-        }
-        wdaDetector.start()
 
         NSLayoutConstraint.activate([
             canvas.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -49,7 +44,6 @@ final class TouchDetectorViewController: UIViewController {
 
     override var prefersStatusBarHidden: Bool { true }
 
-    deinit { wdaDetector.stop() }
 }
 
 enum Theme {

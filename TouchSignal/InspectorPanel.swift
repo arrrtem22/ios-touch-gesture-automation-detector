@@ -60,15 +60,16 @@ final class InspectorPanel: UIView {
             let hits = s.wdaHits.isEmpty ? "wda_service" : s.wdaHits.joined(separator: ", ")
             verdict.text = "WDA score \(s.wdaScore)/100 – WEBDRIVERAGENT CONFIRMED\n" +
                 "hits: \(hits)\n" +
-                "ports: 8100=\(s.wdaPort8100Open ? "open" : "closed")  9100=\(s.wdaPort9100Open ? "open" : "closed")"
+                "geometry: radius-zero \(pct(s.zeroRadiusRatio))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
         } else {
             verdict.textColor = Theme.green
-            verdict.text = "WDA score \(s.wdaScore)/100 – NO WDA SERVICE DETECTED\n" +
-                "hits: touch delivery normal\n" +
-                "ports: 8100=closed  9100=closed"
+            verdict.text = "WDA score \(s.wdaScore)/100 – DIRECT TOUCH OBSERVED\n" +
+                "hits: measurable contact geometry\n" +
+                "geometry: radius-zero \(pct(s.zeroRadiusRatio))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
         }
     }
 
     private func f(_ value: CGFloat, _ digits: Int) -> String { String(format: "%.*f", digits, value) }
     private func f(_ value: TimeInterval, _ digits: Int) -> String { String(format: "%.*f", digits, value) }
+    private func pct(_ value: CGFloat) -> String { String(format: "%.0f%%", value * 100) }
 }

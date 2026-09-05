@@ -13,8 +13,9 @@ struct TouchSnapshot {
     var latency: TimeInterval = 0
     var wdaScore = 0
     var wdaHits: [String] = []
-    var wdaPort8100Open = false
-    var wdaPort9100Open = false
+    var inspectedSampleCount = 0
+    var zeroRadiusRatio: CGFloat = 0
+    var zeroForceRatio: CGFloat = 0
     var isAutomationSuspected = false
     var isEnded = false
 }
@@ -25,14 +26,63 @@ private struct Sample {
     let timestamp: TimeInterval
 }
 
+private struct GestureMetrics {
+    var sampleCount = 0
+    var zeroRadiusCount = 0
+    var zeroForceCount = 0
+    var maximumRadius: CGFloat = 0
+    var maximumForce: CGFloat = 0
+
+    mutating func observe(_ touch: UITouch) {
+        sampleCount += 1
+        maximumRadius = max(maximumRadius, touch.majorRadius)
+        maximumForce = max(maximumForce, touch.force)
+        if touch.majorRadius <= 0.5 { zeroRadiusCount += 1 }
+        if touch.force <= 0.001 { zeroForceCount += 1 }
+    }
+
+    var zeroRadiusRatio: CGFloat {
+        sampleCount == 0 ? 0 : CGFloat(zeroRadiusCount) / CGFloat(sampleCount)
+    }
+
+    var zeroForceRatio: CGFloat {
+        sampleCount == 0 ? 0 : CGFloat(zeroForceCount) / CGFloat(sampleCount)
+    }
+
+    var evidence: AutomationEvidence {
+        // A physical finger has a measurable contact radius. WDA-injected swipes
+        // consistently report both radius and force as zero during movement.
+        let sustainedZeroRadius = sampleCount >= 2 && zeroRadiusRatio >= 0.9 && maximumRadius <= 0.5
+        let sustainedZeroForce = sampleCount >= 2 && zeroForceRatio >= 0.9 && maximumForce <= 0.001
+        let confirmed = sustainedZeroRadius && sustainedZeroForce
+        return AutomationEvidence(
+            score: confirmed ? 100 : 0,
+            isConfirmed: confirmed,
+            hits: confirmed ? ["radius_zero_stream", "force_zero_stream"] : [],
+            sampleCount: sampleCount,
+            zeroRadiusRatio: zeroRadiusRatio,
+            zeroForceRatio: zeroForceRatio
+        )
+    }
+}
+
+struct AutomationEvidence: Equatable {
+    var score = 0
+    var isConfirmed = false
+    var hits: [String] = []
+    var sampleCount = 0
+    var zeroRadiusRatio: CGFloat = 0
+    var zeroForceRatio: CGFloat = 0
+}
+
 final class TouchCanvasView: UIView {
     var onSnapshot: ((TouchSnapshot) -> Void)?
     private var samples: [ObjectIdentifier: [Sample]] = [:]
     private var latest = TouchSnapshot()
+    private var gestureMetrics: [ObjectIdentifier: GestureMetrics] = [:]
     private var recordCount = 0
     private var sequenceCount = 0
     private var activeFingerCount = 0
-    private var automationEvidence = AutomationEvidence()
     private var displayLink: CADisplayLink?
 
     override init(frame: CGRect) {
@@ -47,21 +97,15 @@ final class TouchCanvasView: UIView {
     deinit { displayLink?.invalidate() }
 
     func reset() {
-        samples.removeAll(); recordCount = 0; sequenceCount = 0; activeFingerCount = 0
+        samples.removeAll(); gestureMetrics.removeAll(); recordCount = 0; sequenceCount = 0; activeFingerCount = 0
         latest = TouchSnapshot()
-        applyAutomationEvidence(to: &latest)
         setNeedsDisplay(); onSnapshot?(latest)
-    }
-
-    func updateAutomationEvidence(_ evidence: AutomationEvidence) {
-        automationEvidence = evidence
-        applyAutomationEvidence(to: &latest)
-        onSnapshot?(latest)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         sequenceCount += 1
         activeFingerCount += touches.count
+        for touch in touches { gestureMetrics[ObjectIdentifier(touch)] = GestureMetrics() }
         ingest(touches, phase: "began", event: event)
     }
 
@@ -91,7 +135,11 @@ final class TouchCanvasView: UIView {
             samples[id, default: []].append(sample)
             if samples[id]!.count > 96 { samples[id]!.removeFirst(samples[id]!.count - 96) }
             recordCount += 1
-            var snapshot = TouchSnapshot(
+            if phase == "began" || phase == "moved" {
+                gestureMetrics[id, default: GestureMetrics()].observe(touch)
+            }
+            let evidence = gestureMetrics[id]?.evidence ?? AutomationEvidence()
+            let snapshot = TouchSnapshot(
                 recordCount: recordCount,
                 sequenceCount: sequenceCount,
                 fingerText: String(activeFingerCount),
@@ -102,20 +150,17 @@ final class TouchCanvasView: UIView {
                 force: touch.force,
                 delta: dt,
                 latency: max(0, ProcessInfo.processInfo.systemUptime - touch.timestamp),
+                wdaScore: evidence.score,
+                wdaHits: evidence.hits,
+                inspectedSampleCount: evidence.sampleCount,
+                zeroRadiusRatio: evidence.zeroRadiusRatio,
+                zeroForceRatio: evidence.zeroForceRatio,
+                isAutomationSuspected: evidence.isConfirmed,
                 isEnded: phase == "ended" || phase == "cancelled"
             )
-            applyAutomationEvidence(to: &snapshot)
             latest = snapshot
         }
         setNeedsDisplay(); onSnapshot?(latest)
-    }
-
-    private func applyAutomationEvidence(to snapshot: inout TouchSnapshot) {
-        snapshot.wdaScore = automationEvidence.score
-        snapshot.wdaHits = automationEvidence.hits
-        snapshot.wdaPort8100Open = automationEvidence.port8100Open
-        snapshot.wdaPort9100Open = automationEvidence.port9100Open
-        snapshot.isAutomationSuspected = automationEvidence.isConfirmed
     }
 
     @objc private func refresh() { setNeedsDisplay() }
