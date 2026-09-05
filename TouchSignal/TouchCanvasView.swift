@@ -8,7 +8,11 @@ struct TouchSnapshot {
     var point = CGPoint.zero
     var previous = CGPoint.zero
     var radius: CGFloat = 0
+    var radiusTolerance: CGFloat = 0
     var force: CGFloat = 0
+    var maximumPossibleForce: CGFloat = 0
+    var rawTerminalRadius: CGFloat = 0
+    var rawTerminalForce: CGFloat = 0
     var delta: TimeInterval = 0
     var latency: TimeInterval = 0
     var wdaScore = 0
@@ -16,6 +20,8 @@ struct TouchSnapshot {
     var inspectedSampleCount = 0
     var zeroRadiusRatio: CGFloat = 0
     var zeroForceRatio: CGFloat = 0
+    var minimumGestureRadius: CGFloat = 0
+    var maximumGestureRadius: CGFloat = 0
     var isAutomationSuspected = false
     var isEnded = false
 }
@@ -32,11 +38,21 @@ private struct GestureMetrics {
     var zeroForceCount = 0
     var maximumRadius: CGFloat = 0
     var maximumForce: CGFloat = 0
+    var minimumRadius: CGFloat = .greatestFiniteMagnitude
+    var lastRadius: CGFloat = 0
+    var lastRadiusTolerance: CGFloat = 0
+    var lastForce: CGFloat = 0
+    var lastMaximumPossibleForce: CGFloat = 0
 
     mutating func observe(_ touch: UITouch) {
         sampleCount += 1
         maximumRadius = max(maximumRadius, touch.majorRadius)
         maximumForce = max(maximumForce, touch.force)
+        minimumRadius = min(minimumRadius, touch.majorRadius)
+        lastRadius = touch.majorRadius
+        lastRadiusTolerance = touch.majorRadiusTolerance
+        lastForce = touch.force
+        lastMaximumPossibleForce = touch.maximumPossibleForce
         if touch.majorRadius <= 0.5 { zeroRadiusCount += 1 }
         if touch.force <= 0.001 { zeroForceCount += 1 }
     }
@@ -50,18 +66,25 @@ private struct GestureMetrics {
     }
 
     var evidence: AutomationEvidence {
-        // A physical finger has a measurable contact radius. WDA-injected swipes
-        // consistently report both radius and force as zero during movement.
-        let sustainedZeroRadius = sampleCount >= 2 && zeroRadiusRatio >= 0.9 && maximumRadius <= 0.5
-        let sustainedZeroForce = sampleCount >= 2 && zeroForceRatio >= 0.9 && maximumForce <= 0.001
-        let confirmed = sustainedZeroRadius && sustainedZeroForce
+        let enoughSamples = sampleCount >= 6
+        let radiusSpread = maximumRadius - (minimumRadius == .greatestFiniteMagnitude ? 0 : minimumRadius)
+        let sustainedZeroRadius = enoughSamples && zeroRadiusRatio >= 0.9 && maximumRadius <= 0.5
+        let unnaturallyStableRadius = enoughSamples && minimumRadius > 0.5 && radiusSpread <= 0.10
+        let sustainedZeroForce = enoughSamples && zeroForceRatio >= 0.9 && maximumForce <= 0.001
+        let confirmed = sustainedZeroForce && (sustainedZeroRadius || unnaturallyStableRadius)
+        var hits: [String] = []
+        if sustainedZeroRadius { hits.append("radius_zero_stream") }
+        if unnaturallyStableRadius { hits.append("radius_constant_stream") }
+        if sustainedZeroForce { hits.append("force_zero_stream") }
         return AutomationEvidence(
             score: confirmed ? 100 : 0,
             isConfirmed: confirmed,
-            hits: confirmed ? ["radius_zero_stream", "force_zero_stream"] : [],
+            hits: confirmed ? hits : [],
             sampleCount: sampleCount,
             zeroRadiusRatio: zeroRadiusRatio,
-            zeroForceRatio: zeroForceRatio
+            zeroForceRatio: zeroForceRatio,
+            minimumRadius: minimumRadius == .greatestFiniteMagnitude ? 0 : minimumRadius,
+            maximumRadius: maximumRadius
         )
     }
 }
@@ -73,6 +96,8 @@ struct AutomationEvidence: Equatable {
     var sampleCount = 0
     var zeroRadiusRatio: CGFloat = 0
     var zeroForceRatio: CGFloat = 0
+    var minimumRadius: CGFloat = 0
+    var maximumRadius: CGFloat = 0
 }
 
 final class TouchCanvasView: UIView {
@@ -139,6 +164,12 @@ final class TouchCanvasView: UIView {
                 gestureMetrics[id, default: GestureMetrics()].observe(touch)
             }
             let evidence = gestureMetrics[id]?.evidence ?? AutomationEvidence()
+            let metrics = gestureMetrics[id]
+            let isTerminal = phase == "ended" || phase == "cancelled"
+            let retainedRadius = isTerminal ? (metrics?.lastRadius ?? radius) : radius
+            let retainedRadiusTolerance = isTerminal ? (metrics?.lastRadiusTolerance ?? touch.majorRadiusTolerance) : touch.majorRadiusTolerance
+            let retainedForce = isTerminal ? (metrics?.lastForce ?? touch.force) : touch.force
+            let retainedMaximumForce = isTerminal ? (metrics?.lastMaximumPossibleForce ?? touch.maximumPossibleForce) : touch.maximumPossibleForce
             let snapshot = TouchSnapshot(
                 recordCount: recordCount,
                 sequenceCount: sequenceCount,
@@ -146,8 +177,12 @@ final class TouchCanvasView: UIView {
                 phase: phase,
                 point: point,
                 previous: previous,
-                radius: radius,
-                force: touch.force,
+                radius: retainedRadius,
+                radiusTolerance: retainedRadiusTolerance,
+                force: retainedForce,
+                maximumPossibleForce: retainedMaximumForce,
+                rawTerminalRadius: isTerminal ? radius : retainedRadius,
+                rawTerminalForce: isTerminal ? touch.force : retainedForce,
                 delta: dt,
                 latency: max(0, ProcessInfo.processInfo.systemUptime - touch.timestamp),
                 wdaScore: evidence.score,
@@ -155,8 +190,10 @@ final class TouchCanvasView: UIView {
                 inspectedSampleCount: evidence.sampleCount,
                 zeroRadiusRatio: evidence.zeroRadiusRatio,
                 zeroForceRatio: evidence.zeroForceRatio,
+                minimumGestureRadius: evidence.minimumRadius,
+                maximumGestureRadius: evidence.maximumRadius,
                 isAutomationSuspected: evidence.isConfirmed,
-                isEnded: phase == "ended" || phase == "cancelled"
+                isEnded: isTerminal
             )
             latest = snapshot
         }

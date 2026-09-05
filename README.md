@@ -8,11 +8,11 @@ Native iOS touch-gesture inspector with live trails and telemetry.
 
 - Live grid, path, contact-radius, and endpoint display
 - Touch position, force, timing, and multi-touch telemetry
-- WebDriverAgent gesture detection from sustained zero-radius and zero-force samples
+- WebDriverAgent gesture detection from sustained zero-force and synthetic radius patterns
 - Clear diagnostics view for accessibility and automation signals
 
 ## Run
 
 Open `TouchSignal.xcodeproj` in Xcode and run on iOS 17+.
 
-The WDA verdict evaluates touch geometry throughout `began` and `moved`. A swipe is confirmed only when both radius and force remain zero across multiple samples. The final `ended` sample is excluded because iOS may report zero geometry for a real finger when it lifts.
+The WDA verdict evaluates touch geometry throughout `began` and `moved`. It recognizes both zero-radius injection and the constant synthetic radius seen in WDA swipes when force remains zero. The final `ended` sample is excluded from classification, and the UI retains the last meaningful radius and force while also showing the raw terminal values.

@@ -48,8 +48,8 @@ final class InspectorPanel: UIView {
         rows.text = "id 1   sample \(s.recordCount)  seq \(s.sequenceCount)  cb \(s.phase)  taps 1\n" +
         "pos       \(f(s.point.x, 4)),  \(f(s.point.y, 4))    precise  \(f(s.point.x, 4)), \(f(s.point.y, 4))\n" +
         "prev      \(f(s.previous.x, 4)),  \(f(s.previous.y, 4))    precise  \(f(s.previous.x, 4)), \(f(s.previous.y, 4))\n" +
-        "radius    \(f(s.radius, 4))  tol 6.0719\n" +
-        "force     \(f(s.force, 5))  maxPossible 0.00000\n" +
+        "radius    \(f(s.radius, 4))  tol \(f(s.radiusTolerance, 4))  rawEnd \(f(s.rawTerminalRadius, 4))\n" +
+        "force     \(f(s.force, 5))  maxPossible \(f(s.maximumPossibleForce, 5))  rawEnd \(f(s.rawTerminalForce, 5))\n" +
         "stylus    alt 1.5708  azi 0.0000  roll 0.0000\n" +
         "timestamp \(f(ProcessInfo.processInfo.systemUptime, 3))  dt \(f(s.delta * 1000, 3)) ms  latency \(f(s.latency * 1000, 2)) ms\n" +
         "estimated  prev 0  expecting 0  updIdx -1\n" +
@@ -60,12 +60,12 @@ final class InspectorPanel: UIView {
             let hits = s.wdaHits.isEmpty ? "wda_service" : s.wdaHits.joined(separator: ", ")
             verdict.text = "WDA score \(s.wdaScore)/100 – WEBDRIVERAGENT CONFIRMED\n" +
                 "hits: \(hits)\n" +
-                "geometry: radius-zero \(pct(s.zeroRadiusRatio))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
+                "geometry: radius \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
         } else {
             verdict.textColor = Theme.green
             verdict.text = "WDA score \(s.wdaScore)/100 – DIRECT TOUCH OBSERVED\n" +
                 "hits: measurable contact geometry\n" +
-                "geometry: radius-zero \(pct(s.zeroRadiusRatio))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
+                "geometry: radius \(f(s.minimumGestureRadius, 2))…\(f(s.maximumGestureRadius, 2))  force-zero \(pct(s.zeroForceRatio))  samples \(s.inspectedSampleCount)"
         }
     }
 
