@@ -124,6 +124,7 @@ final class TouchCanvasView: UIView {
     private var sequenceCount = 0
     private var activeFingerCount = 0
     private var displayLink: CADisplayLink?
+    private var pointerTrails: [[Sample]] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -131,15 +132,45 @@ final class TouchCanvasView: UIView {
         backgroundColor = Theme.background
         displayLink = CADisplayLink(target: self, selector: #selector(refresh))
         displayLink?.add(to: .main, forMode: .common)
+
+        if #available(iOS 13.4, *) {
+            let pointerPan = UIPanGestureRecognizer(target: self, action: #selector(handlePointerPan(_:)))
+            pointerPan.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.indirectPointer.rawValue)]
+            pointerPan.cancelsTouchesInView = false
+            addGestureRecognizer(pointerPan)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     deinit { displayLink?.invalidate() }
 
     func reset() {
-        samples.removeAll(); gestureMetrics.removeAll(); recordCount = 0; sequenceCount = 0; activeFingerCount = 0
+        samples.removeAll(); pointerTrails.removeAll(); gestureMetrics.removeAll(); recordCount = 0; sequenceCount = 0; activeFingerCount = 0
         latest = TouchSnapshot()
         setNeedsDisplay(); onSnapshot?(latest)
+    }
+
+    @available(iOS 13.4, *)
+    @objc private func handlePointerPan(_ recognizer: UIPanGestureRecognizer) {
+        let sample = Sample(
+            point: recognizer.location(in: self),
+            radius: 13,
+            timestamp: ProcessInfo.processInfo.systemUptime
+        )
+        switch recognizer.state {
+        case .began:
+            pointerTrails.append([sample])
+            if pointerTrails.count > 12 { pointerTrails.removeFirst(pointerTrails.count - 12) }
+        case .changed, .ended, .cancelled:
+            if pointerTrails.isEmpty { pointerTrails.append([]) }
+            pointerTrails[pointerTrails.count - 1].append(sample)
+            if pointerTrails[pointerTrails.count - 1].count > 96 {
+                pointerTrails[pointerTrails.count - 1].removeFirst(pointerTrails[pointerTrails.count - 1].count - 96)
+            }
+        default:
+            break
+        }
+        setNeedsDisplay()
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -227,7 +258,8 @@ final class TouchCanvasView: UIView {
         for y in stride(from: CGFloat(0), through: bounds.height, by: spacing) { context.move(to: CGPoint(x: 0, y: y)); context.addLine(to: CGPoint(x: bounds.width, y: y)) }
         context.strokePath()
 
-        for trail in samples.values {
+        let trails = Array(samples.values) + pointerTrails
+        for trail in trails {
             guard let first = trail.first else { continue }
             context.setStrokeColor(Theme.cyan.cgColor); context.setLineWidth(2.4); context.setLineJoin(.round)
             context.move(to: first.point)
